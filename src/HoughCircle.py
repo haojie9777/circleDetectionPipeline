@@ -24,7 +24,8 @@ while True:
             # draw the circle in the output image, then draw a rectangle
             # corresponding to the center of the circle
             cv.circle(frame, (x, y), r, (0, 255, 0), 4)
-            cv.rectangle(frame, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+            cv.circle(frame, (x, y), 1, (0, 0, 255), 5)
+            #cv.rectangle(frame, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
             
     cv.imshow('Input', frame)
     
