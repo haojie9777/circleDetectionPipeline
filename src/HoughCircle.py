@@ -9,11 +9,11 @@ if not capture.isOpened():
 
 while True:
     ret, frame = capture.read()
-    frame = frame.copy()
+    #frame = frame.copy()
     gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     
     # detect circles in the image
-    circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, 1.2, 100)
+    circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, 1.2, 800)
     
         # ensure at least some circles were found
     if circles is not None:
