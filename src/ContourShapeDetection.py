@@ -7,25 +7,77 @@ capture = cv.VideoCapture(0,cv.CAP_DSHOW)
 if not capture.isOpened():
     raise IOError("Cannot open webcam")
 
+
+#dummy function
+empty = lambda _: True
+
+#declare GUI for adjusting parameters
+cv.namedWindow("Canny Parameters")
+cv.resizeWindow("Parameters",640,240)
+cv.createTrackbar("Threshold 1", "Canny Parameters",23,255,empty)
+cv.createTrackbar("Threshold 2", "Canny Parameters",83,255,empty)
+
+
+def predictShape(points):
+    if points == 4:
+        return "Rectangle or Square"
+    elif points == 3:
+        return "Triangle"
+    elif points >= 7:
+        return "Maybe a circle"
+    else:
+        return "Unknown"
+
+def getContours(img,imgContour):
+    contours, hierarchy = cv.findContours(img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+  
+    #filter out unneccessary contours
+    for c in contours:
+        area = cv.contourArea(c)
+        if area > 10000:
+            cv.drawContours(imgContour,c,-1,(255,0,255),5)
+            perimeter = cv.arcLength(c,True)
+            #approx number of points in the contour
+            approx = cv.approxPolyDP(c,0.02*perimeter,True)
+            print(len(approx))
+            x,y,w,h = cv.boundingRect(approx)
+            cv.rectangle(imgContour, (x,y), (x+w, y+h),(0,255,0),5)
+            
+            cv.putText(imgContour, "Points: " + str(len(approx)), (x + w + 20, y + 20),\
+                cv.FONT_HERSHEY_COMPLEX,.7,(0,255,0),2)
+            cv.putText(imgContour, "Area: " + str(int(area)), (x + w + 20, y + 45),\
+                cv.FONT_HERSHEY_COMPLEX,.7,(0,255,0),2)
+            cv.putText(imgContour, "Shape: " + predictShape(len(approx)), (x + w + 20, y + 75),\
+                cv.FONT_HERSHEY_COMPLEX,.7,(0,255,0),2)
+            
+
 while True:
-    ret, frame = capture.read()
+    ret, frame = capture.read() #webcam frame shape: 480 x 640 x 3
     img = frame.copy()
-    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    img = cv.medianBlur(gray,5)
+    imgContour = frame.copy()
     
-    #perform binarization
-    #ret, thresh = cv.threshold(gray, 127, 255, 0)
-    thresh = cv.adaptiveThreshold(img,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,11,2)
+    #apply gaussian blur and convert to grayscale
+    imgBlur = cv.GaussianBlur(img,(7,7),1)
+    imgGray = cv.cvtColor(imgBlur,cv.COLOR_BGR2GRAY)
     
-    #Find contour, contours is a np array (x,y) coordinates of boundary points of object
-    contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    #apply canny edge
+    threshold1 = cv.getTrackbarPos("Threshold 1","Canny Paramaters")
+    threshold2 = cv.getTrackbarPos("Threshold 2","Canny Parameters")
+    imgCanny = cv.Canny(imgGray, threshold1, threshold2)
     
-    cv.drawContours(frame,contours,-1, (0,255,0),2)
+    #dilation to reduce noise
+    kernel = np.ones((5,5))
+    imgDil = cv.dilate(imgCanny, kernel, iterations=1)
     
-    cv.imshow('Input', img)
+    #apply contours
+    getContours(imgDil, imgContour)
+    
+    combinedImage = cv.hconcat([img,imgContour])
+    cv.imshow('Before and After',combinedImage)
     
     if cv.waitKey(20) & 0xFF==ord("d"):
         break
+
 
 #cleanup
 capture.release()
