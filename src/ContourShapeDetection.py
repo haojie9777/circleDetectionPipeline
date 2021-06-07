@@ -18,15 +18,19 @@ cv.createTrackbar("Threshold 1", "Canny Parameters",23,255,empty)
 cv.createTrackbar("Threshold 2", "Canny Parameters",83,255,empty)
 
 
-def predictShape(points):
-    if points == 4:
-        return "Rectangle or Square"
-    elif points == 3:
+def predictShape(vertices, width, height):
+    aspectRatio = width / float(height)
+    if vertices == 4:
+        if aspectRatio >= 0.95:
+            return "Rectangle"
+        else: 
+            return "Square"
+    elif vertices == 3:
         return "Triangle"
-    elif points >= 7:
-        return "Maybe a circle"
+    elif vertices >= 7:
+        return "Circle"
     else:
-        return "Unknown"
+        return "Others"
 
 def getContours(img,imgContour):
     contours, hierarchy = cv.findContours(img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
@@ -38,16 +42,16 @@ def getContours(img,imgContour):
             cv.drawContours(imgContour,c,-1,(255,0,255),5)
             perimeter = cv.arcLength(c,True)
             #approx number of points in the contour
-            approx = cv.approxPolyDP(c,0.02*perimeter,True)
-            print(len(approx))
-            x,y,w,h = cv.boundingRect(approx)
+            vertices = cv.approxPolyDP(c,0.02*perimeter,True)
+            print(len(vertices))
+            x,y,w,h = cv.boundingRect(vertices)
             cv.rectangle(imgContour, (x,y), (x+w, y+h),(0,255,0),5)
             
-            cv.putText(imgContour, "Points: " + str(len(approx)), (x + w + 20, y + 20),\
+            cv.putText(imgContour, "Vertices: " + str(len(vertices)), (x + w + 20, y + 20),\
                 cv.FONT_HERSHEY_COMPLEX,.7,(0,255,0),2)
             cv.putText(imgContour, "Area: " + str(int(area)), (x + w + 20, y + 45),\
                 cv.FONT_HERSHEY_COMPLEX,.7,(0,255,0),2)
-            cv.putText(imgContour, "Shape: " + predictShape(len(approx)), (x + w + 20, y + 75),\
+            cv.putText(imgContour, "Shape: " + predictShape(len(vertices),w,h), (x + w + 20, y + 75),\
                 cv.FONT_HERSHEY_COMPLEX,.7,(0,255,0),2)
             
 
